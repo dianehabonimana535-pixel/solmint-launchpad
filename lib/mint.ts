@@ -22,6 +22,7 @@ import {
 } from "@metaplex-foundation/umi";
 import { fromWeb3JsInstruction } from "@metaplex-foundation/umi-web3js-adapters";
 import bs58 from "bs58";
+import { setAuthority, AuthorityType as MplAuthorityType, mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import { RPC_ENDPOINT } from "./network";
 
 export interface CreateTokenParams {
@@ -82,7 +83,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   const recipientPubkey = new PublicKey(recipient);
 
-  const umi = createUmi(RPC_ENDPOINT).use(walletAdapterIdentity(wallet)).use(mplTokenMetadata());
+  const umi = createUmi(RPC_ENDPOINT).use(walletAdapterIdentity(wallet)).use(mplTokenMetadata()).use(mplToolbox());
 
   const mintSigner = generateSigner(umi);
   const authority = umi.identity; // the connected wallet acts as mint/freeze/update authority
@@ -147,32 +148,26 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
     }
 
     if (revokeMint) {
-      const ix = createSetAuthorityInstruction(
-        mintPubkeyWeb3,
-        wallet.publicKey,
-        AuthorityType.MintTokens,
-        null
-      );
-      revokeBuilder = revokeBuilder.add({
-        instruction: fromWeb3JsInstruction(ix),
-        signers: [authority],
-        bytesCreatedOnChain: 0,
-      });
-    }
+  revokeBuilder = revokeBuilder.add(
+    setAuthority(umi, {
+      owned: mintSigner.publicKey,
+      owner: authority,
+      authorityType: MplAuthorityType.MintTokens,
+      newAuthority: none(),
+    })
+  );
+}
 
     if (revokeFreeze) {
-      const ix = createSetAuthorityInstruction(
-        mintPubkeyWeb3,
-        wallet.publicKey,
-        AuthorityType.FreezeAccount,
-        null
-      );
-      revokeBuilder = revokeBuilder.add({
-        instruction: fromWeb3JsInstruction(ix),
-        signers: [authority],
-        bytesCreatedOnChain: 0,
-      });
-    }
+  revokeBuilder = revokeBuilder.add(
+    setAuthority(umi, {
+      owned: mintSigner.publicKey,
+      owner: authority,
+      authorityType: MplAuthorityType.FreezeAccount,
+      newAuthority: none(),
+    })
+  );
+}
 
     const { signature: revokeSig } = await revokeBuilder.sendAndConfirm(umi, {
       confirm: { commitment: "confirmed" },
