@@ -66,6 +66,7 @@ export interface CreateTokenResult {
 export async function createToken(params: CreateTokenParams): Promise<CreateTokenResult> {
   const {
     wallet,
+    connection,
     name,
     symbol,
     decimals,
@@ -131,50 +132,58 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   let finalSig = bs58EncodeSignature(createSig);
 
   if (revokeAny) {
-    onStep?.("revoking-authorities");
-    let revokeBuilder = transactionBuilder();
+  onStep?.("revoking-authorities");
 
-    if (revokeUpdate) {
-      // Immutable metadata: strip the ability to further edit name/symbol/uri.
-      revokeBuilder = revokeBuilder.add(
-        updateV1(umi, {
-          mint: mintSigner.publicKey,
-          authority,
-          data: none(),
-          newUpdateAuthority: none(),
-          primarySaleHappened: none(),
-          isMutable: false,
-        })
-      );
-    }
-
-    if (revokeMint) {
-  revokeBuilder = revokeBuilder.add(
-    setAuthority(umi, {
-      owned: mintSigner.publicKey,
-      owner: authority.publicKey,
-      authorityType: MplAuthorityType.MintTokens,
-      newAuthority: null,
-    })
-  );
-}
-
-    if (revokeFreeze) {
-  revokeBuilder = revokeBuilder.add(
-    setAuthority(umi, {
-      owned: mintSigner.publicKey,
-      owner: authority.publicKey,
-      authorityType: MplAuthorityType.FreezeAccount,
-      newAuthority: null,
-    })
-  );
-}
-
-    const { signature: revokeSig } = await revokeBuilder.sendAndConfirm(umi, {
+  if (revokeUpdate) {
+    let revokeBuilder = transactionBuilder().add(
+      updateV1(umi, {
+        mint: mintSigner.publicKey,
+        authority,
+        data: none(),
+        newUpdateAuthority: none(),
+        primarySaleHappened: none(),
+        isMutable: false,
+      })
+    );
+    const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
       confirm: { commitment: "confirmed" },
     });
-    finalSig = bs58EncodeSignature(revokeSig);
+    finalSig = bs58EncodeSignature(updSig);
   }
+
+  const revokeIxs = [];
+  if (revokeMint) {
+    revokeIxs.push(
+      createSetAuthorityInstruction(
+        mintPubkeyWeb3,
+        wallet.publicKey,
+        AuthorityType.MintTokens,
+        null
+      )
+    );
+  }
+  if (revokeFreeze) {
+    revokeIxs.push(
+      createSetAuthorityInstruction(
+        mintPubkeyWeb3,
+        wallet.publicKey,
+        AuthorityType.FreezeAccount,
+        null
+      )
+    );
+  }
+
+  if (revokeIxs.length > 0) {
+    const tx = new Transaction().add(...revokeIxs);
+    tx.feePayer = wallet.publicKey;
+    const { blockhash } = await connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    const signed = await wallet.signTransaction!(tx);
+    const sig = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(sig, "confirmed");
+    finalSig = sig;
+  }
+}
 
   onStep?.("confirming");
   onStep?.("complete");
