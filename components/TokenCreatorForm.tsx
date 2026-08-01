@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import { PublicKey } from "@solana/web3.js";
 import { Upload, Copy, ExternalLink, RefreshCw, CheckCircle2 } from "lucide-react";
@@ -63,6 +63,7 @@ type Phase = "idle" | "running" | "success" | "error";
 
 export default function TokenCreatorForm() {
   const wallet = useWallet();
+  const { connection } = useConnection();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(initialForm);
@@ -138,6 +139,7 @@ export default function TokenCreatorForm() {
 
       const mintResult = await createToken({
         wallet,
+        connection,
         name: form.name.trim(),
         symbol: form.symbol.trim().toUpperCase(),
         decimals: Number(form.decimals),
