@@ -143,6 +143,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
           newUpdateAuthority: none(),
           primarySaleHappened: none(),
           isMutable: false,
+          tokenStandard: TokenStandard.Fungible,
         })
       );
     }
