@@ -6,6 +6,7 @@ import {
 } from "@solana/spl-token";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
   createV1,
   mintV1,
@@ -80,7 +81,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   const recipientPubkey = new PublicKey(recipient);
 
-  const umi = createUmi(RPC_ENDPOINT).use(walletAdapterIdentity(wallet));
+  const umi = createUmi(RPC_ENDPOINT).use(walletAdapterIdentity(wallet)).use(mplTokenMetadata());
 
   const mintSigner = generateSigner(umi);
   const authority = umi.identity; // the connected wallet acts as mint/freeze/update authority
