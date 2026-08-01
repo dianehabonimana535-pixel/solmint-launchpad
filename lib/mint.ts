@@ -153,7 +153,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
       owned: mintSigner.publicKey,
       owner: authority.publicKey,
       authorityType: MplAuthorityType.MintTokens,
-      newAuthority: none(),
+      newAuthority: null,
     })
   );
 }
@@ -164,7 +164,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
       owned: mintSigner.publicKey,
       owner: authority.publicKey,
       authorityType: MplAuthorityType.FreezeAccount,
-      newAuthority: none(),
+      newAuthority: null,
     })
   );
 }
