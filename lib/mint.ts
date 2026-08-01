@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection, Transaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   AuthorityType,
@@ -27,6 +27,7 @@ import { RPC_ENDPOINT } from "./network";
 
 export interface CreateTokenParams {
   wallet: WalletContextState;
+  connection: Connection;
   name: string;
   symbol: string;
   decimals: number;
