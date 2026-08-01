@@ -151,7 +151,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   revokeBuilder = revokeBuilder.add(
     setAuthority(umi, {
       owned: mintSigner.publicKey,
-      owner: authority,
+      owner: authority.publicKey,
       authorityType: MplAuthorityType.MintTokens,
       newAuthority: none(),
     })
@@ -162,7 +162,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   revokeBuilder = revokeBuilder.add(
     setAuthority(umi, {
       owned: mintSigner.publicKey,
-      owner: authority,
+      owner: authority.publicKey,
       authorityType: MplAuthorityType.FreezeAccount,
       newAuthority: none(),
     })
