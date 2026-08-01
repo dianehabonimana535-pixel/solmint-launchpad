@@ -189,4 +189,3 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 function bs58EncodeSignature(sig: Uint8Array): string {
   return bs58.encode(sig);
 }
-}
