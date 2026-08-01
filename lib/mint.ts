@@ -21,6 +21,7 @@ import {
   transactionBuilder,
 } from "@metaplex-foundation/umi";
 import { fromWeb3JsInstruction } from "@metaplex-foundation/umi-web3js-adapters";
+import bs58 from "bs58";
 import { RPC_ENDPOINT } from "./network";
 
 export interface CreateTokenParams {
@@ -186,10 +187,6 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 }
 
 function bs58EncodeSignature(sig: Uint8Array): string {
-  // umi signatures are raw bytes; base58-encode for explorer links.
-  // bs58 is a transitive dep of @solana/web3.js, imported lazily to avoid
-  // pulling it into the client bundle unless a transaction actually completes.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const bs58 = require("bs58");
   return bs58.encode(sig);
+}
 }
