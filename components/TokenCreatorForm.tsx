@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import TokenPreviewCard from "@/components/TokenPreviewCard";
 import AuthorityOptions, { Authorities } from "@/components/AuthorityOptions";
@@ -32,6 +33,8 @@ interface FormState {
   telegram: string;
   discord: string;
   recipient: string;
+  creatorAddress: string;
+  creatorName: string;
 }
 
 const initialForm: FormState = {
@@ -45,6 +48,8 @@ const initialForm: FormState = {
   telegram: "",
   discord: "",
   recipient: "",
+  creatorAddress: "",
+  creatorName: "",
 };
 
 const STEP_INDEX: Record<MintStep | "wallet" | "logo" | "metadata", number> = {
@@ -74,6 +79,7 @@ export default function TokenCreatorForm() {
     revokeFreeze: true,
     revokeUpdate: false,
   });
+  const [customCreatorEnabled, setCustomCreatorEnabled] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -83,7 +89,10 @@ export default function TokenCreatorForm() {
 
   const revokingAny = authorities.revokeMint || authorities.revokeFreeze || authorities.revokeUpdate;
 
-  const errors = useMemo(() => validate(form, logoFile, wallet.connected), [form, logoFile, wallet.connected]);
+  const errors = useMemo(
+    () => validate(form, logoFile, wallet.connected, customCreatorEnabled),
+    [form, logoFile, wallet.connected, customCreatorEnabled]
+  );
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -122,6 +131,9 @@ export default function TokenCreatorForm() {
     setErrorMessage(null);
     setCurrentIndex(0);
 
+    const creatorAddress = customCreatorEnabled ? form.creatorAddress.trim() : "";
+    const creatorName = customCreatorEnabled ? form.creatorName.trim() : "";
+
     try {
       setCurrentIndex(STEP_INDEX.logo);
       const { metadataUri } = await uploadTokenAssets(logoFile as File, {
@@ -132,6 +144,8 @@ export default function TokenCreatorForm() {
         twitter: form.twitter.trim(),
         telegram: form.telegram.trim(),
         discord: form.discord.trim(),
+        creatorAddress: creatorAddress || undefined,
+        creatorName: creatorName || undefined,
       });
       setCurrentIndex(STEP_INDEX.metadata);
 
@@ -149,6 +163,7 @@ export default function TokenCreatorForm() {
         revokeMint: authorities.revokeMint,
         revokeFreeze: authorities.revokeFreeze,
         revokeUpdate: authorities.revokeUpdate,
+        creatorAddress: creatorAddress || undefined,
         onStep: (step) => setCurrentIndex(STEP_INDEX[step]),
       });
 
@@ -179,6 +194,7 @@ export default function TokenCreatorForm() {
     setForm(initialForm);
     setLogoFile(null);
     setLogoPreviewUrl(null);
+    setCustomCreatorEnabled(false);
     setPhase("idle");
     setCurrentIndex(-1);
     setFailedIndex(null);
@@ -303,6 +319,49 @@ export default function TokenCreatorForm() {
 
         <Card>
           <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="customCreator"
+                  checked={customCreatorEnabled}
+                  onCheckedChange={(v) => setCustomCreatorEnabled(Boolean(v))}
+                  className="mt-1"
+                />
+                <div>
+                  <Label htmlFor="customCreator" className="text-base font-semibold">
+                    Creator's Info (Optional)
+                  </Label>
+                  <CardDescription className="mt-1">
+                    Change the information of the creator in the metadata. By default, it's
+                    your connected wallet.
+                  </CardDescription>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          {customCreatorEnabled && (
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <Field label="Creator's Address" required hint="Won't be marked verified — it hasn't signed this transaction">
+                <Input
+                  placeholder="Ex: 3stNIYCJd..."
+                  value={form.creatorAddress}
+                  onChange={(e) => update("creatorAddress", e.target.value)}
+                />
+              </Field>
+              <Field label="Creator's Name" required>
+                <Input
+                  placeholder="Ex: John Doe"
+                  value={form.creatorName}
+                  onChange={(e) => update("creatorName", e.target.value)}
+                  maxLength={64}
+                />
+              </Field>
+            </CardContent>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Social links</CardTitle>
             <CardDescription>Optional — shown in your token metadata.</CardDescription>
           </CardHeader>
@@ -415,7 +474,12 @@ function Row({ label, value, onCopy }: { label: string; value: string; onCopy: (
   );
 }
 
-function validate(form: FormState, logoFile: File | null, connected: boolean): string[] {
+function validate(
+  form: FormState,
+  logoFile: File | null,
+  connected: boolean,
+  customCreatorEnabled: boolean
+): string[] {
   const errors: string[] = [];
   if (!form.name.trim()) errors.push("Token name is required");
   if (form.name.length > 32) errors.push("Token name must be 32 characters or fewer");
@@ -440,6 +504,22 @@ function validate(form: FormState, logoFile: File | null, connected: boolean): s
       new PublicKey(form.recipient.trim());
     } catch {
       errors.push("Recipient wallet address is not a valid Solana address");
+    }
+  }
+
+  if (customCreatorEnabled) {
+    if (!form.creatorAddress.trim()) {
+      errors.push("Creator's address is required when Creator's Info is enabled");
+    } else {
+      try {
+        // eslint-disable-next-line no-new
+        new PublicKey(form.creatorAddress.trim());
+      } catch {
+        errors.push("Creator's address is not a valid Solana address");
+      }
+    }
+    if (!form.creatorName.trim()) {
+      errors.push("Creator's name is required when Creator's Info is enabled");
     }
   }
 
