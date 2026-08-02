@@ -11,7 +11,6 @@ import {
   createV1,
   mintV1,
   updateV1,
-  fetchMetadataFromSeeds,
   TokenStandard,
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
@@ -19,6 +18,7 @@ import {
   percentAmount,
   publicKey as toUmiPublicKey,
   transactionBuilder,
+  none,
 } from "@metaplex-foundation/umi";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import bs58 from "bs58";
@@ -180,19 +180,22 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
     // --- Update authority revocation (Token Metadata program) ---
     if (revokeUpdate) {
-      const initialMetadata = await fetchMetadataFromSeeds(umi, {
-        mint: mintSigner.publicKey,
-      });
-
+      // We deliberately do NOT re-fetch the metadata account here.
+      // Public RPC endpoints are often load-balanced across nodes with
+      // slightly different indexing lag, so reading the account back
+      // immediately after createV1's confirmation can spuriously fail
+      // with "account not found" even though it exists on-chain.
+      // We already know exactly what we wrote, so we just resend it.
       const revokeBuilder = transactionBuilder().add(
         updateV1(umi, {
           mint: mintSigner.publicKey,
           authority,
           data: {
-            ...initialMetadata,
             name,
             symbol,
             uri: metadataUri,
+            sellerFeeBasisPoints: percentAmount(0),
+            creators: none(),
           },
           newUpdateAuthority: toUmiPublicKey(SystemProgram.programId.toBase58()),
           isMutable: false,
@@ -214,4 +217,4 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
 function bs58EncodeSignature(sig: Uint8Array): string {
   return bs58.encode(sig);
-    }
+}
