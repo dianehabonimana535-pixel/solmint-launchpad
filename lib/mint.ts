@@ -6,24 +6,22 @@ import {
 } from "@solana/spl-token";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
+  mplTokenMetadata,
   createV1,
   mintV1,
-  updateMetadataAccountV2,
-  findMetadataPda,
+  updateV1,
+  fetchMetadataFromSeeds,
   TokenStandard,
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
   percentAmount,
   publicKey as toUmiPublicKey,
-  none,
   transactionBuilder,
 } from "@metaplex-foundation/umi";
-import { fromWeb3JsInstruction } from "@metaplex-foundation/umi-web3js-adapters";
+import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import bs58 from "bs58";
-import { setAuthority, AuthorityType as MplAuthorityType, mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import { RPC_ENDPOINT } from "./network";
 
 export interface CreateTokenParams {
@@ -86,7 +84,10 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   const recipientPubkey = new PublicKey(recipient);
 
-  const umi = createUmi(RPC_ENDPOINT).use(walletAdapterIdentity(wallet)).use(mplTokenMetadata()).use(mplToolbox());
+  const umi = createUmi(RPC_ENDPOINT)
+    .use(walletAdapterIdentity(wallet))
+    .use(mplTokenMetadata())
+    .use(mplToolbox());
 
   const mintSigner = generateSigner(umi);
   const authority = umi.identity; // the connected wallet acts as mint/freeze/update authority
@@ -128,76 +129,82 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   const mintAddress = mintSigner.publicKey.toString();
   const mintPubkeyWeb3 = new PublicKey(mintAddress);
 
-  // 2) Optionally revoke authorities in a second transaction.
+  // 2) Optionally revoke authorities. Mint/freeze go through a single
+  //    web3.js transaction; update authority goes through Umi's updateV1
+  //    because it also needs to rewrite the metadata account's authority.
   const revokeAny = revokeMint || revokeFreeze || revokeUpdate;
   let finalSig = bs58EncodeSignature(createSig);
 
   if (revokeAny) {
-  onStep?.("revoking-authorities");
-    const initialMetadata = await fetchMetadataFromSeeds(umi, {
-      mint: mintSigner.publicKey,
-    }, { commitment: "confirmed" });
+    onStep?.("revoking-authorities");
 
-  if (revokeUpdate) {
-  const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
-  let revokeBuilder = transactionBuilder().add(
-    updateV1(umi, {
-    mint: mintSigner.publicKey,
-    authority,
-    data: {
-      ...initialMetadata,
-      name,
-      symbol,
-      uri: metadataUri,
-    },
-    newUpdateAuthority: SYSTEM_PROGRAM_ID,
-    isMutable: false,
-  })
-  );
-  const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
-    confirm: { commitment: "confirmed" },
-  });
-  finalSig = bs58EncodeSignature(updSig);
-}
+    // --- Mint / Freeze authority revocation (SPL Token program) ---
+    const revokeIxs = [];
 
-  const revokeIxs = [];
-  if (revokeMint) {
-    revokeIxs.push(
-      createSetAuthorityInstruction(
-        mintPubkeyWeb3,
-        wallet.publicKey,
-        AuthorityType.MintTokens,
-        null
-      )
-    );
-  }
-  if (revokeFreeze) {
-    revokeIxs.push(
-      createSetAuthorityInstruction(
-        mintPubkeyWeb3,
-        wallet.publicKey,
-        AuthorityType.FreezeAccount,
-        null
-      )
-    );
-  }
+    if (revokeMint) {
+      revokeIxs.push(
+        createSetAuthorityInstruction(
+          mintPubkeyWeb3,
+          wallet.publicKey,
+          AuthorityType.MintTokens,
+          null
+        )
+      );
+    }
 
-  if (revokeUpdate) {
-      const metadataPda = findMetadataPda(umi, { mint: mintSigner.publicKey });
-      let revokeBuilder = transactionBuilder().add(
-        updateMetadataAccountV2(umi, {
-          metadata: metadataPda,
-          updateAuthority: authority,
-          newUpdateAuthority: SYSTEM_PROGRAM_ID,
+    if (revokeFreeze) {
+      revokeIxs.push(
+        createSetAuthorityInstruction(
+          mintPubkeyWeb3,
+          wallet.publicKey,
+          AuthorityType.FreezeAccount,
+          null
+        )
+      );
+    }
+
+    if (revokeIxs.length > 0) {
+      const tx = new Transaction().add(...revokeIxs);
+      tx.feePayer = wallet.publicKey;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+
+      const signedTx = await wallet.signTransaction!(tx);
+      const revokeSig = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(
+        { signature: revokeSig, blockhash, lastValidBlockHeight },
+        "confirmed"
+      );
+      finalSig = revokeSig;
+    }
+
+    // --- Update authority revocation (Token Metadata program) ---
+    if (revokeUpdate) {
+      const initialMetadata = await fetchMetadataFromSeeds(umi, {
+        mint: mintSigner.publicKey,
+      });
+
+      const revokeBuilder = transactionBuilder().add(
+        updateV1(umi, {
+          mint: mintSigner.publicKey,
+          authority,
+          data: {
+            ...initialMetadata,
+            name,
+            symbol,
+            uri: metadataUri,
+          },
+          newUpdateAuthority: toUmiPublicKey(SystemProgram.programId.toBase58()),
           isMutable: false,
         })
       );
+
       const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
         confirm: { commitment: "confirmed" },
       });
       finalSig = bs58EncodeSignature(updSig);
-    })
-}
+    }
+  }
 
   onStep?.("confirming");
   onStep?.("complete");
@@ -207,4 +214,4 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
 function bs58EncodeSignature(sig: Uint8Array): string {
   return bs58.encode(sig);
-}
+    }
