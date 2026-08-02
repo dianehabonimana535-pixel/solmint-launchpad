@@ -120,7 +120,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   onStep?.("creating-mint");
   const { signature: createSig } = await builder.sendAndConfirm(umi, {
-    confirm: { commitment: "confirmed" },
+    confirm: { commitment: "finalized" },
   });
 
   onStep?.("minting-supply");
@@ -183,8 +183,10 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
       // Public RPC endpoints are often load-balanced across nodes with
       // slightly different indexing lag, so reading the account back
       // immediately after createV1's confirmation can spuriously fail
-      // with "account not found" even though it exists on-chain.
-      // We already know exactly what we wrote, so we just resend it.
+      // with "account not found" — or, in this instruction's case,
+      // "Incorrect account owner" during simulation, for the same
+      // underlying reason. We already know exactly what we wrote, so we
+      // just resend it, with a short retry loop to absorb that lag.
       const revokeBuilder = transactionBuilder().add(
         updateV1(umi, {
           mint: mintSigner.publicKey,
@@ -203,10 +205,25 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
         })
       );
 
-      const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
-        confirm: { commitment: "confirmed" },
-      });
-      finalSig = bs58EncodeSignature(updSig);
+      let updSig: Uint8Array | undefined;
+      let lastErr: unknown;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          if (attempt > 0) {
+            await new Promise((r) => setTimeout(r, 2000 * attempt));
+          }
+          const result = await revokeBuilder.sendAndConfirm(umi, {
+            confirm: { commitment: "confirmed" },
+          });
+          updSig = result.signature;
+          lastErr = undefined;
+          break;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (lastErr) throw lastErr;
+      finalSig = bs58EncodeSignature(updSig!);
     }
   }
 
