@@ -77,7 +77,7 @@ export default function TokenCreatorForm() {
   const [authorities, setAuthorities] = useState<Authorities>({
     revokeMint: true,
     revokeFreeze: true,
-    revokeUpdate: false,
+    revokeUpdate: true,
   });
   const [customCreatorEnabled, setCustomCreatorEnabled] = useState(false);
 
