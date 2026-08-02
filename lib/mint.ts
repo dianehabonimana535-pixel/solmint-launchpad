@@ -18,7 +18,6 @@ import {
   percentAmount,
   publicKey as toUmiPublicKey,
   transactionBuilder,
-  none,
 } from "@metaplex-foundation/umi";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import bs58 from "bs58";
@@ -195,7 +194,6 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
             symbol,
             uri: metadataUri,
             sellerFeeBasisPoints: 0,
-            creators: none(),
           },
           newUpdateAuthority: toUmiPublicKey(SystemProgram.programId.toBase58()),
           isMutable: false,
