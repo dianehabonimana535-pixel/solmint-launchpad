@@ -135,16 +135,25 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   onStep?.("revoking-authorities");
 
   if (revokeUpdate) {
-    let revokeBuilder = transactionBuilder().add(
-      updateV1(umi, {
-        mint: mintSigner.publicKey,
-        authority,
-        data: none(),
-        newUpdateAuthority: none(),
-        primarySaleHappened: none(),
-        isMutable: false,
-      })
-    );
+  const SYSTEM_PROGRAM_ID = toUmiPublicKey("11111111111111111111111111111111");
+  let revokeBuilder = transactionBuilder().add(
+    updateV1(umi, {
+      mint: mintSigner.publicKey,
+      authority,
+      data: {
+        name,
+        symbol,
+        uri: metadataUri,
+        sellerFeeBasisPoints: 0,
+        creators: none(),
+        collection: none(),
+        uses: none(),
+      },
+      newUpdateAuthority: SYSTEM_PROGRAM_ID,
+      primarySaleHappened: none(),
+      isMutable: false,
+    })
+  );
     const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
       confirm: { commitment: "confirmed" },
     });
