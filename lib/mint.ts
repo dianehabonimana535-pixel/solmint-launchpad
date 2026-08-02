@@ -145,7 +145,6 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
         symbol,
         uri: metadataUri,
         sellerFeeBasisPoints: 0,
-        creators: none(),
       },
       collection: { __kind: "None" },
       uses: { __kind: "None" },
