@@ -134,7 +134,9 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   if (revokeAny) {
   onStep?.("revoking-authorities");
-    const currentAsset = await fetchDigitalAsset(umi, mintSigner.publicKey); 
+    const currentAsset = await fetchDigitalAsset(umi, mintSigner.publicKey, {
+  commitment: "confirmed",
+});
 
   if (revokeUpdate) {
   const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
