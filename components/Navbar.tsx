@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Coins, Moon, Sun, History } from "lucide-react";
+import { Coins, Moon, Sun, History, Droplets } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,8 @@ const WalletMultiButtonDynamic = dynamic(
 const links = [
   { href: "/", label: "Home" },
   { href: "/create", label: "Create Token" },
+  { href: "https://raydium.io/liquidity/create/", label: "Manage Liquidity", external: true },
+  { href: "/#faq", label: "How it works" },
   { href: "/history", label: "History" },
 ];
 
@@ -54,6 +56,8 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noopener noreferrer" : undefined}
               className={cn(
                 "rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
                 pathname === link.href && "bg-secondary text-foreground"
@@ -62,6 +66,10 @@ export default function Navbar() {
               {link.label === "History" ? (
                 <span className="flex items-center gap-1.5">
                   <History className="h-3.5 w-3.5" /> {link.label}
+                </span>
+              ) : link.label === "Manage Liquidity" ? (
+                <span className="flex items-center gap-1.5">
+                  <Droplets className="h-3.5 w-3.5" /> {link.label}
                 </span>
               ) : (
                 link.label
@@ -74,7 +82,7 @@ export default function Navbar() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground"
           >
             {isLight ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
@@ -87,6 +95,8 @@ export default function Navbar() {
           <Link
             key={link.href}
             href={link.href}
+            target={link.external ? "_blank" : undefined}
+            rel={link.external ? "noopener noreferrer" : undefined}
             className={cn(
               "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted-foreground",
               pathname === link.href && "bg-secondary text-foreground"
