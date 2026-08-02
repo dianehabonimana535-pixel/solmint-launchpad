@@ -142,21 +142,18 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
   let revokeBuilder = transactionBuilder().add(
     updateV1(umi, {
-      mint: mintSigner.publicKey,
-      authority,
-      data: {
-  name,
-  symbol,
-  uri: metadataUri,
-  sellerFeeBasisPoints: 0,
-  creators: currentAsset.metadata.creators,
-},
-      collection: { __kind: "None" },
-      uses: { __kind: "None" },
-      newUpdateAuthority: SYSTEM_PROGRAM_ID,
-      primarySaleHappened: none(),
-      isMutable: false,
-    })
+    mint: mintSigner.publicKey,
+    authority,
+    data: {
+      name,
+      symbol,
+      uri: metadataUri,
+      sellerFeeBasisPoints: 0,
+      creators: currentAsset.metadata.creators,
+    },
+    newUpdateAuthority: SYSTEM_PROGRAM_ID,
+    isMutable: false,
+  })
   );
   const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
     confirm: { commitment: "confirmed" },
