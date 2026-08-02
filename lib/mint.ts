@@ -104,7 +104,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
         name,
         symbol,
         uri: metadataUri,
-        sellerFeeBasisPoints: percentAmount(0),
+        sellerFeeBasisPoints: percentAmount(0, 2),
         decimals,
         tokenStandard: TokenStandard.Fungible,
       })
@@ -194,7 +194,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
             name,
             symbol,
             uri: metadataUri,
-            sellerFeeBasisPoints: percentAmount(0),
+            sellerFeeBasisPoints: percentAmount(0, 2),
             creators: none(),
           },
           newUpdateAuthority: toUmiPublicKey(SystemProgram.programId.toBase58()),
