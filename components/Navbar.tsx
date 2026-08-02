@@ -13,7 +13,13 @@ const WalletMultiButtonDynamic = dynamic(
   { ssr: false }
 );
 
-const baseLinks = [
+type NavLink = {
+  href: string;
+  label: string;
+  external?: boolean;
+};
+
+const baseLinks: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/create", label: "Create Token" },
   { href: "/#faq", label: "How it works" },
@@ -53,7 +59,7 @@ export default function Navbar() {
     window.localStorage.setItem("solmint.theme", next ? "light" : "dark");
   }
 
-  const links = [
+  const links: NavLink[] = [
     ...baseLinks.slice(0, 2),
     { href: liquidityHref, label: "Manage Liquidity", external: true },
     ...baseLinks.slice(2),
