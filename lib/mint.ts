@@ -144,14 +144,6 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
     updateV1(umi, {
     mint: mintSigner.publicKey,
     authority,
-    tokenStandard: TokenStandard.Fungible,
-    data: {
-      name,
-      symbol,
-      uri: metadataUri,
-      sellerFeeBasisPoints: 0,
-      creators: currentAsset.metadata.creators,
-    },
     newUpdateAuthority: SYSTEM_PROGRAM_ID,
     isMutable: false,
   })
