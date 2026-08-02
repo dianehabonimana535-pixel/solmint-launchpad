@@ -6,6 +6,8 @@ export interface TokenMetadataInput {
   twitter?: string;
   telegram?: string;
   discord?: string;
+  creatorName?: string;
+  creatorAddress?: string;
 }
 
 /**
@@ -29,7 +31,7 @@ export async function uploadTokenAssets(
   }
   const { uri: imageUri } = await imageRes.json();
 
-  const metadataJson = {
+  const metadataJson: Record<string, unknown> = {
     name: meta.name,
     symbol: meta.symbol,
     description: meta.description,
@@ -43,8 +45,21 @@ export async function uploadTokenAssets(
     properties: {
       files: [{ uri: imageUri, type: logo.type || "image/png" }],
       category: "image",
+      ...(meta.creatorAddress
+        ? { creators: [{ address: meta.creatorAddress, share: 100 }] }
+        : {}),
     },
   };
+
+  // Optional human-readable creator name. There's no official on-chain
+  // field for this (on-chain creators only store address/share/verified),
+  // so it's stored in the off-chain JSON only, alongside the address.
+  if (meta.creatorName || meta.creatorAddress) {
+    metadataJson.creator = {
+      name: meta.creatorName || "",
+      address: meta.creatorAddress || "",
+    };
+  }
 
   const metaRes = await fetch("/api/upload", {
     method: "POST",
