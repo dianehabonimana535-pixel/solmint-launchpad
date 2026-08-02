@@ -1,4 +1,4 @@
-import { PublicKey, Connection, Transaction } from "@solana/web3.js";
+import { PublicKey, Connection, Transaction, SystemProgram } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import {
   AuthorityType,
@@ -135,7 +135,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   onStep?.("revoking-authorities");
 
   if (revokeUpdate) {
-  const SYSTEM_PROGRAM_ID = toUmiPublicKey("11111111111111111111111111111111111111111");
+  const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
   let revokeBuilder = transactionBuilder().add(
     updateV1(umi, {
       mint: mintSigner.publicKey,
