@@ -136,7 +136,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   onStep?.("revoking-authorities");
     const initialMetadata = await fetchMetadataFromSeeds(umi, {
       mint: mintSigner.publicKey,
-    });
+    }, { commitment: "confirmed" });
 
   if (revokeUpdate) {
   const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
