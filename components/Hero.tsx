@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Zap, Ban, Droplets } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Hero() {
@@ -49,19 +49,6 @@ export default function Hero() {
           <Link href="/create">
             Create your token <ArrowRight className="h-4 w-4" />
           </Link>
-        </Button>
-        <Button asChild size="lg" variant="outline">
-          <Link href="#faq">How it works</Link>
-        </Button>
-        <Button asChild size="lg" variant="outline">
-          <a
-            href="https://raydium.io/liquidity/create/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Droplets className="h-4 w-4" />
-            Manage Liquidity
-          </a>
         </Button>
       </motion.div>
 
