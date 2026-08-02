@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Zap, Ban } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, Ban, Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Hero() {
@@ -12,7 +12,7 @@ export default function Hero() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs font-medium text-muted-foreground"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs"
       >
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
         Live on Solana Mainnet · No platform fee, ever
@@ -52,6 +52,16 @@ export default function Hero() {
         </Button>
         <Button asChild size="lg" variant="outline">
           <Link href="#faq">How it works</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <a
+            href="https://raydium.io/liquidity/create/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Droplets className="h-4 w-4" />
+            Manage Liquidity
+          </a>
         </Button>
       </motion.div>
 
