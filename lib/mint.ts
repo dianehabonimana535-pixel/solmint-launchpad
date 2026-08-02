@@ -12,6 +12,7 @@ import {
   mintV1,
   updateV1,
   TokenStandard,
+  fetchDigitalAsset,
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
@@ -133,6 +134,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
 
   if (revokeAny) {
   onStep?.("revoking-authorities");
+    const currentAsset = await fetchDigitalAsset(umi, mintSigner.publicKey); 
 
   if (revokeUpdate) {
   const SYSTEM_PROGRAM_ID = toUmiPublicKey(SystemProgram.programId.toBase58());
@@ -141,11 +143,12 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
       mint: mintSigner.publicKey,
       authority,
       data: {
-        name,
-        symbol,
-        uri: metadataUri,
-        sellerFeeBasisPoints: 0,
-      },
+  name,
+  symbol,
+  uri: metadataUri,
+  sellerFeeBasisPoints: 0,
+  creators: currentAsset.metadata.creators,
+},
       collection: { __kind: "None" },
       uses: { __kind: "None" },
       newUpdateAuthority: SYSTEM_PROGRAM_ID,
