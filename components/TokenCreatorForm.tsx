@@ -38,7 +38,7 @@ const initialForm: FormState = {
   name: "",
   symbol: "",
   description: "",
-  decimals: "6",
+  decimals: "9",
   supply: "1000000000",
   website: "",
   twitter: "",
@@ -259,7 +259,7 @@ export default function TokenCreatorForm() {
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Decimals" required>
+              <Field label="Decimals" required hint="9 is the Solana standard for meme coins">
                 <Input type="number" min={0} max={9} value={form.decimals} onChange={(e) => update("decimals", e.target.value)} />
               </Field>
               <Field label="Initial supply" required>
