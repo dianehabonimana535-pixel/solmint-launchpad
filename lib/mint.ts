@@ -10,9 +10,9 @@ import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
   createV1,
   mintV1,
-  updateV1,
+  updateMetadataAccountV2,
+  findMetadataPda,
   TokenStandard,
-  fetchMetadataFromSeeds,
 } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
@@ -182,16 +182,21 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
     );
   }
 
-  if (revokeIxs.length > 0) {
-    const tx = new Transaction().add(...revokeIxs);
-    tx.feePayer = wallet.publicKey;
-    const { blockhash } = await connection.getLatestBlockhash();
-    tx.recentBlockhash = blockhash;
-    const signed = await wallet.signTransaction!(tx);
-    const sig = await connection.sendRawTransaction(signed.serialize());
-    await connection.confirmTransaction(sig, "confirmed");
-    finalSig = sig;
-  }
+  if (revokeUpdate) {
+      const metadataPda = findMetadataPda(umi, { mint: mintSigner.publicKey });
+      let revokeBuilder = transactionBuilder().add(
+        updateMetadataAccountV2(umi, {
+          metadata: metadataPda,
+          updateAuthority: authority,
+          newUpdateAuthority: SYSTEM_PROGRAM_ID,
+          isMutable: false,
+        })
+      );
+      const { signature: updSig } = await revokeBuilder.sendAndConfirm(umi, {
+        confirm: { commitment: "confirmed" },
+      });
+      finalSig = bs58EncodeSignature(updSig);
+    }
 }
 
   onStep?.("confirming");
