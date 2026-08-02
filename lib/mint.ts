@@ -35,6 +35,7 @@ export interface CreateTokenParams {
   revokeMint: boolean;
   revokeFreeze: boolean;
   revokeUpdate: boolean;
+  creatorAddress?: string; // optional custom creator address in on-chain metadata
   onStep?: (step: MintStep) => void;
 }
 
@@ -74,6 +75,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
     revokeMint,
     revokeFreeze,
     revokeUpdate,
+    creatorAddress,
     onStep,
   } = params;
 
@@ -91,6 +93,15 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
   const mintSigner = generateSigner(umi);
   const authority = umi.identity; // the connected wallet acts as mint/freeze/update authority
 
+  // Creator shown in on-chain metadata. Defaults to the connected wallet
+  // (which signs this transaction, so it can be marked verified). A custom
+  // address can be supplied instead, but it can't be marked verified since
+  // it hasn't signed anything — that's normal Metaplex behavior, not a bug.
+  const creatorPubkey = creatorAddress
+    ? toUmiPublicKey(creatorAddress)
+    : authority.publicKey;
+  const creatorVerified = !creatorAddress;
+
   onStep?.("building");
 
   // 1) Create the mint account + initialize it + create on-chain metadata,
@@ -106,6 +117,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
         sellerFeeBasisPoints: percentAmount(0, 2),
         decimals,
         tokenStandard: TokenStandard.Fungible,
+        creators: [{ address: creatorPubkey, verified: creatorVerified, share: 100 }],
       })
     )
     .add(
@@ -197,7 +209,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
             uri: metadataUri,
             sellerFeeBasisPoints: 0,
             creators: [
-              { address: authority.publicKey, verified: true, share: 100 },
+              { address: creatorPubkey, verified: creatorVerified, share: 100 },
             ],
           },
           newUpdateAuthority: toUmiPublicKey(SystemProgram.programId.toBase58()),
