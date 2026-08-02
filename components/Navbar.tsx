@@ -6,16 +6,16 @@ import dynamic from "next/dynamic";
 import { Coins, Moon, Sun, History, Droplets } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getHistory } from "@/lib/history";
 
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
   { ssr: false }
 );
 
-const links = [
+const baseLinks = [
   { href: "/", label: "Home" },
   { href: "/create", label: "Create Token" },
-  { href: "https://raydium.io/liquidity/create/", label: "Manage Liquidity", external: true },
   { href: "/#faq", label: "How it works" },
   { href: "/history", label: "History" },
 ];
@@ -23,6 +23,9 @@ const links = [
 export default function Navbar() {
   const pathname = usePathname();
   const [isLight, setIsLight] = useState(false);
+  const [liquidityHref, setLiquidityHref] = useState(
+    "https://raydium.io/liquidity/create/"
+  );
 
   useEffect(() => {
     const stored = window.localStorage.getItem("solmint.theme");
@@ -32,6 +35,16 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", !light);
   }, []);
 
+  useEffect(() => {
+    const history = getHistory();
+    if (history.length > 0) {
+      const lastToken = history[0];
+      setLiquidityHref(
+        `https://raydium.io/liquidity/create-pool/?token=${lastToken.mintAddress}`
+      );
+    }
+  }, [pathname]);
+
   function toggleTheme() {
     const next = !isLight;
     setIsLight(next);
@@ -39,6 +52,12 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", !next);
     window.localStorage.setItem("solmint.theme", next ? "light" : "dark");
   }
+
+  const links = [
+    ...baseLinks.slice(0, 2),
+    { href: liquidityHref, label: "Manage Liquidity", external: true },
+    ...baseLinks.slice(2),
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-lg">
