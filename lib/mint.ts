@@ -196,7 +196,7 @@ export async function createToken(params: CreateTokenParams): Promise<CreateToke
         confirm: { commitment: "confirmed" },
       });
       finalSig = bs58EncodeSignature(updSig);
-    }
+    })
 }
 
   onStep?.("confirming");
