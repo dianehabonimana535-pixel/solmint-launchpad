@@ -51,13 +51,8 @@ export default function TrendingCoins() {
           </div>
           <div className="text-right">
             <p className="font-semibold">{formatUsd(coin.priceUsd)}</p>
-            <p
-              className={
-                coin.priceChange24h >= 0 ? "text-green-400 text-sm" : "text-red-400 text-sm"
-              }
-            >
-              {coin.priceChange24h >= 0 ? "+" : ""}
-              {coin.priceChange24h.toFixed(2)}%
+            <p className="text-sm text-gray-400">
+              24h range: {coin.priceRangePercent.toFixed(1)}%
             </p>
             <p className="text-xs text-gray-500">Vol {formatUsd(coin.volume24h)}</p>
           </div>
