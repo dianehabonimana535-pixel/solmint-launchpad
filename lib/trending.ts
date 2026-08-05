@@ -56,7 +56,7 @@ function isMemecoinToken(token: RaydiumMint): boolean {
 
 async function fetchPage(page: number): Promise<RaydiumPool[]> {
   const res = await fetch(
-    `https://api-v3.raydium.io/pools/info/list?poolType=all&poolSortField=volume24h&sortType=desc&pageSize=100&page=${page}`
+    `https://api-v3.raydium.io/pools/info/list?poolType=all&poolSortField=default&sortType=desc&pageSize=100&page=${page}`
   );
   if (!res.ok) throw new Error(`Raydium API error: ${res.status}`);
   const json: RaydiumApiResponse = await res.json();
@@ -70,23 +70,34 @@ async function fetchPage(page: number): Promise<RaydiumPool[]> {
  * Fetches trending Solana memecoins launched within the last 48h,
  * ranked by real 24h trading volume on Raydium.
  * Excludes major/established assets (SOL, stablecoins, wrapped tokens, tokenized stocks).
+ *
+ * Strategy: pools are fetched newest-first so we don't have to scan the
+ * entire pool history to find recent launches, then results are ranked
+ * by volume so only the ones that actually performed well surface.
  */
 export async function fetchTrendingCoins(): Promise<TrendingCoin[]> {
   const nowSeconds = Date.now() / 1000;
   const cutoffSeconds = nowSeconds - 48 * 3600;
 
   const seen = new Set<string>();
-  const results: TrendingCoin[] = [];
+  const candidates: TrendingCoin[] = [];
 
-  for (let page = 1; page <= 6 && results.length < 50; page++) {
+  let page = 1;
+  let consecutiveTooOldPages = 0;
+
+  while (page <= 25 && consecutiveTooOldPages < 2) {
     const pools = await fetchPage(page);
     if (pools.length === 0) break;
+
+    let sawRecentInThisPage = false;
 
     for (const pool of pools) {
       if (!pool.mintA || !pool.mintB || !pool.day) continue;
 
       const openTime = Number(pool.openTime);
       if (!openTime || openTime < cutoffSeconds) continue;
+
+      sawRecentInThisPage = true;
 
       const isMintAEstablished =
         EXCLUDED_SYMBOLS.has(pool.mintA.symbol.toUpperCase());
@@ -96,7 +107,7 @@ export async function fetchTrendingCoins(): Promise<TrendingCoin[]> {
       if (seen.has(token.address)) continue;
       seen.add(token.address);
 
-      results.push({
+      candidates.push({
         mintAddress: token.address,
         poolId: pool.id,
         name: token.name,
@@ -112,9 +123,10 @@ export async function fetchTrendingCoins(): Promise<TrendingCoin[]> {
         solscanUrl: `https://solscan.io/token/${token.address}`,
       });
     }
+
+    consecutiveTooOldPages = sawRecentInThisPage ? 0 : consecutiveTooOldPages + 1;
+    page++;
   }
 
-  return results
-    .sort((a, b) => b.volume24h - a.volume24h)
-    .slice(0, 50);
+  return candidates.sort((a, b) => b.volume24h - a.volume24h).slice(0, 50);
 }
