@@ -5,18 +5,28 @@ export interface TrendingCoin {
   logoUri: string;
   priceUsd: number;
   volume24h: number;
-  priceChange24h: number;
+  priceRangePercent: number;
   tvl: number;
+}
+
+interface RaydiumMint {
+  address: string;
+  symbol: string;
+  name: string;
+  logoURI: string;
 }
 
 interface RaydiumPool {
   id: string;
-  mintA: { address: string; symbol: string; name: string; logoURI: string };
-  mintB: { address: string; symbol: string; name: string; logoURI: string };
+  mintA: RaydiumMint;
+  mintB: RaydiumMint;
   price: number;
-  volume24h: number;
   tvl: number;
-  day: { priceChangePercent: number };
+  day: {
+    volume: number;
+    priceMin: number;
+    priceMax: number;
+  };
 }
 
 interface RaydiumApiResponse {
@@ -46,21 +56,26 @@ export async function fetchTrendingCoins(): Promise<TrendingCoin[]> {
     throw new Error("Unexpected Raydium API response");
   }
 
-  return json.data.data.map((pool) => {
-    // Skip the SOL/USDC side of the pair, show the "other" token
-    const isMintAKnown =
-      pool.mintA.symbol === "SOL" || pool.mintA.symbol === "USDC";
-    const token = isMintAKnown ? pool.mintB : pool.mintA;
+  return json.data.data
+    .filter((pool) => pool.mintA && pool.mintB && pool.day)
+    .map((pool) => {
+      const isMintAKnown =
+        pool.mintA.symbol === "SOL" || pool.mintA.symbol === "USDC";
+      const token = isMintAKnown ? pool.mintB : pool.mintA;
 
-    return {
-      mintAddress: token.address,
-      name: token.name,
-      symbol: token.symbol,
-      logoUri: token.logoURI,
-      priceUsd: pool.price,
-      volume24h: pool.volume24h,
-      priceChange24h: pool.day?.priceChangePercent ?? 0,
-      tvl: pool.tvl,
-    };
-  });
+      const { priceMin, priceMax } = pool.day;
+      const priceRangePercent =
+        priceMin > 0 ? ((priceMax - priceMin) / priceMin) * 100 : 0;
+
+      return {
+        mintAddress: token.address,
+        name: token.name,
+        symbol: token.symbol,
+        logoUri: token.logoURI,
+        priceUsd: pool.price,
+        volume24h: pool.day.volume,
+        priceRangePercent,
+        tvl: pool.tvl,
+      };
+    });
 }
