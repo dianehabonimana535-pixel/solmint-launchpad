@@ -22,7 +22,8 @@ type NavLink = {
 const baseLinks: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/create", label: "Create Token" },
-  { href: "/#faq", label: "How it works" },
+  { href: "/trending", label: "Trending" },
+  { href: "#faq", label: "How it works" },
   { href: "/history", label: "History" },
 ];
 
@@ -115,7 +116,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <nav className="flex items-center gap-1 overflow-x-auto border-t border-border/60 px-4 py-2 md:hidden">
+      <nav className="flex flex-col gap-1 border-t border-border/60 px-4 py-2 md:hidden">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -123,7 +124,7 @@ export default function Navbar() {
             target={link.external ? "_blank" : undefined}
             rel={link.external ? "noopener noreferrer" : undefined}
             className={cn(
-              "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted-foreground",
+              "block rounded-lg px-3 py-2 text-sm text-muted-foreground",
               pathname === link.href && "bg-secondary text-foreground"
             )}
           >
