@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Copy, ExternalLink, Trash2, Coins } from "lucide-react";
+import { Copy, ExternalLink, Trash2, Coins, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -78,21 +78,3 @@ export default function HistoryPage() {
                     <Button asChild variant="outline" size="sm" className="flex-1">
                       <a href={explorerAddressUrl(entry.mintAddress)} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5" /> Token
-                      </a>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="flex-1">
-                      <a href={explorerTxUrl(entry.signature)} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" /> Tx
-                      </a>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-      <Footer />
-    </main>
-  );
-}
