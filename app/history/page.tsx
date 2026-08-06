@@ -78,3 +78,26 @@ export default function HistoryPage() {
                     <Button asChild variant="outline" size="sm" className="flex-1">
                       <a href={explorerAddressUrl(entry.mintAddress)} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5" /> Token
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <a href={explorerTxUrl(entry.signature)} target="_blank" rel="noreferrer">
+                        <ExternalLink className="h-3.5 w-3.5" /> Tx
+                      </a>
+                    </Button>
+                  </div>
+                  <Button asChild variant="gradient" size="sm" className="w-full">
+                    <Link href={`/token/${entry.mintAddress}`}>
+                      <BarChart3 className="h-3.5 w-3.5" /> Dashboard
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+      <Footer />
+    </main>
+  );
+}
